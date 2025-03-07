@@ -42,116 +42,125 @@ export default function JobDetailPage({ params }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="bg-red-100 text-red-700 p-4 rounded-lg">{error}</div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center">
+        <div className="bg-red-900/50 backdrop-blur-lg border border-red-500 text-red-200 px-6 py-4 rounded-xl">
+          {error}
+        </div>
       </div>
     );
   }
 
   if (!job) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-600">İş bulunamadı.</div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center">
+        <div className="text-gray-400">İş bulunamadı.</div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-8">
       <div className="max-w-3xl mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">İş Detayları</h1>
-          <div className="flex gap-2">
+          <h1 className="text-3xl font-bold text-white">İş Detayları</h1>
+          <div className="flex gap-3">
             <Link
               href={`/jobs/${params.id}/edit`}
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 cursor-pointer"
+              className="bg-gradient-to-r from-blue-600 to-blue-800 text-white px-6 py-2.5 rounded-lg hover:from-blue-700 hover:to-blue-900 transition-all duration-200 font-medium shadow-lg"
             >
               Düzenle
             </Link>
             <button
               onClick={handleDelete}
-              className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 cursor-pointer"
+              className="bg-gradient-to-r from-red-600 to-red-800 text-white px-6 py-2.5 rounded-lg hover:from-red-700 hover:to-red-900 transition-all duration-200 font-medium shadow-lg"
             >
               Sil
             </button>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="grid grid-cols-2 gap-6">
+        <div className="bg-gray-800/50 backdrop-blur-lg rounded-xl shadow-2xl p-8 border border-gray-700">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <h3 className="text-gray-600 mb-1">Firma</h3>
-              <p className="text-gray-900 font-medium">
+              <h3 className="text-gray-400 text-sm font-medium mb-2">Firma</h3>
+              <p className="text-white font-medium">
                 {job.firm?.name || "Belirtilmemiş"}
               </p>
             </div>
             <div>
-              <h3 className="text-gray-600 mb-1">Müşteri</h3>
-              <p className="text-gray-900 font-medium">{job.name}</p>
+              <h3 className="text-gray-400 text-sm font-medium mb-2">
+                Müşteri
+              </h3>
+              <p className="text-white font-medium">{job.name}</p>
             </div>
             <div>
-              <h3 className="text-gray-600 mb-1">Telefon</h3>
-              <p className="text-gray-900 font-medium">{job.phone}</p>
+              <h3 className="text-gray-400 text-sm font-medium mb-2">
+                Telefon
+              </h3>
+              <p className="text-white font-medium">{job.phone}</p>
             </div>
             <div>
-              <h3 className="text-gray-600 mb-1">Araç</h3>
-              <p className="text-gray-900 font-medium">
+              <h3 className="text-gray-400 text-sm font-medium mb-2">Araç</h3>
+              <p className="text-white font-medium">
                 {job.brand} {job.model}
               </p>
             </div>
             <div>
-              <h3 className="text-gray-600 mb-1">Plaka</h3>
-              <p className="text-gray-900 font-medium">{job.plate}</p>
+              <h3 className="text-gray-400 text-sm font-medium mb-2">Plaka</h3>
+              <p className="text-white font-medium">{job.plate}</p>
             </div>
             <div>
-              <h3 className="text-gray-600 mb-1">Tutar</h3>
-              <p className="text-gray-900 font-medium">
+              <h3 className="text-gray-400 text-sm font-medium mb-2">Tutar</h3>
+              <p className="text-white font-medium">
                 ₺{job.price?.toLocaleString("tr-TR")}
               </p>
             </div>
             <div>
-              <h3 className="text-gray-600 mb-1">Durum</h3>
+              <h3 className="text-gray-400 text-sm font-medium mb-2">Durum</h3>
               <p
-                className={`inline-flex px-2 py-1 rounded-full text-sm font-medium
+                className={`inline-flex px-3 py-1 rounded-lg text-sm font-medium
                 ${
                   job.status === "Tamamlandı"
-                    ? "bg-green-100 text-green-800"
+                    ? "bg-green-900/50 text-green-200 border border-green-500"
                     : job.status === "Devam Ediyor"
-                    ? "bg-yellow-100 text-yellow-800"
-                    : "bg-gray-100 text-gray-800"
+                    ? "bg-yellow-900/50 text-yellow-200 border border-yellow-500"
+                    : "bg-gray-900/50 text-gray-200 border border-gray-500"
                 }`}
               >
                 {job.status || "Beklemede"}
               </p>
             </div>
             <div>
-              <h3 className="text-gray-600 mb-1">Tarih</h3>
-              <p className="text-gray-900 font-medium">
+              <h3 className="text-gray-400 text-sm font-medium mb-2">Tarih</h3>
+              <p className="text-white font-medium">
                 {new Date(job.date).toLocaleDateString("tr-TR")}
               </p>
             </div>
           </div>
 
-          <div className="mt-6">
-            <h3 className="text-gray-600 mb-1">Yapılan İşler</h3>
-            <p className="text-gray-900 whitespace-pre-wrap">{job.job}</p>
+          <div className="mt-8 border-t border-gray-700 pt-6">
+            <h3 className="text-gray-400 text-sm font-medium mb-2">
+              Yapılan İşler
+            </h3>
+            <p className="text-white whitespace-pre-wrap">{job.job}</p>
           </div>
         </div>
 
         <div className="mt-6">
           <Link
             href="/jobs"
-            className="text-blue-500 hover:text-blue-600 cursor-pointer"
+            className="text-blue-400 hover:text-blue-300 transition-colors duration-200 flex items-center gap-2"
           >
-            ← İşler Listesine Dön
+            <span>←</span>
+            <span>İşler Listesine Dön</span>
           </Link>
         </div>
       </div>

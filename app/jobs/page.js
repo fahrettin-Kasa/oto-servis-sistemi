@@ -361,35 +361,35 @@ export default function JobsPage() {
         </div>
       </div>
 
-      {/* Sayfalama */}
+      {/* Pagination */}
       {jobs && jobs.length > 0 && (
-        <div className="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="text-sm text-gray-700 w-full sm:w-auto text-center sm:text-left">
-            Toplam {pagination?.total || 0} kayıt
-          </div>
-          <div className="flex gap-2 w-full sm:w-auto justify-center">
+        <div className="flex justify-end items-center gap-4 mt-6 bg-gray-800/50 backdrop-blur-lg p-4 rounded-xl border border-gray-700">
+          <span className="text-gray-400 text-sm">
+            Sayfa {pagination?.page || 1} / {pagination?.totalPages || 1}
+          </span>
+          <div className="flex gap-2">
             <button
-              onClick={() => {
-                setFilters((prev) => ({ ...prev, page: prev.page - 1 }));
-                fetchJobs();
-              }}
-              disabled={pagination?.page === 1}
-              className="px-4 py-2 border rounded disabled:opacity-50 w-full sm:w-auto"
+              onClick={() =>
+                setFilters((prev) => ({ ...prev, page: prev.page - 1 }))
+              }
+              disabled={!pagination?.page || pagination.page === 1}
+              className="bg-gradient-to-r from-gray-700 to-gray-800 text-white px-4 py-2 rounded-lg hover:from-gray-600 hover:to-gray-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-medium shadow-lg"
             >
-              Önceki
+              <span>←</span>
+              <span>Önceki</span>
             </button>
-            <span className="px-4 py-2">
-              Sayfa {pagination?.page || 1} / {pagination?.totalPages || 1}
-            </span>
             <button
-              onClick={() => {
-                setFilters((prev) => ({ ...prev, page: prev.page + 1 }));
-                fetchJobs();
-              }}
-              disabled={!pagination?.hasMore}
-              className="px-4 py-2 border rounded disabled:opacity-50 w-full sm:w-auto"
+              onClick={() =>
+                setFilters((prev) => ({ ...prev, page: prev.page + 1 }))
+              }
+              disabled={
+                !pagination?.totalPages ||
+                pagination.page === pagination.totalPages
+              }
+              className="bg-gradient-to-r from-gray-700 to-gray-800 text-white px-4 py-2 rounded-lg hover:from-gray-600 hover:to-gray-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-medium shadow-lg"
             >
-              Sonraki
+              <span>Sonraki</span>
+              <span>→</span>
             </button>
           </div>
         </div>

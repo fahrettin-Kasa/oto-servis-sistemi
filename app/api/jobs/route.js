@@ -43,6 +43,31 @@ export async function POST(request) {
     await dbConnect();
     const data = await request.json();
 
+    // Parçaları kontrol et ve stok miktarlarını güncelle
+    if (data.parts && data.parts.length > 0) {
+      for (const partData of data.parts) {
+        const stock = await Stock.findById(partData.part);
+        if (!stock) {
+          return NextResponse.json(
+            { error: "Parça bulunamadı" },
+            { status: 404 }
+          );
+        }
+
+        // Stok miktarını kontrol et
+        if (stock.quantity < partData.quantity) {
+          return NextResponse.json(
+            { error: `${stock.name} için yeterli stok yok` },
+            { status: 400 }
+          );
+        }
+
+        // Stok miktarını güncelle
+        stock.quantity -= partData.quantity;
+        await stock.save();
+      }
+    }
+
     // İşi oluştur
     const job = await Job.create(data);
 
@@ -51,11 +76,8 @@ export async function POST(request) {
       const firm = await Firm.findById(data.firm);
       if (firm) {
         const jobPrice = Number(data.price) || 0;
-
-        // Hem toplam bakiyeye hem de güncel bakiyeye ekle
         firm.totalBalance = (firm.totalBalance || 0) + jobPrice;
         firm.currentBalance = (firm.currentBalance || 0) + jobPrice;
-
         await firm.save();
       }
     }
@@ -65,11 +87,8 @@ export async function POST(request) {
       const customer = await Customer.findById(data.customer);
       if (customer) {
         const jobPrice = Number(data.price) || 0;
-
-        // Hem toplam bakiyeye hem de güncel bakiyeye ekle
         customer.totalBalance = (customer.totalBalance || 0) + jobPrice;
         customer.currentBalance = (customer.currentBalance || 0) + jobPrice;
-
         await customer.save();
       }
     }
@@ -85,6 +104,72 @@ export async function POST(request) {
     });
     return NextResponse.json(
       { error: "İş eklenirken bir hata oluştu" },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT endpoint: İş günceller
+export async function PUT(request) {
+  try {
+    await dbConnect();
+    const data = await request.json();
+    const { id } = data;
+
+    // Mevcut işi bul
+    const existingJob = await Job.findById(id);
+    if (!existingJob) {
+      return NextResponse.json({ error: "İş bulunamadı" }, { status: 404 });
+    }
+
+    // Parçaları kontrol et ve stok miktarlarını güncelle
+    if (data.parts && data.parts.length > 0) {
+      // Önce eski parçaları stoka geri ekle
+      for (const oldPart of existingJob.parts) {
+        const stock = await Stock.findById(oldPart.part);
+        if (stock) {
+          stock.quantity += oldPart.quantity;
+          await stock.save();
+        }
+      }
+
+      // Yeni parçaları stoktan düş
+      for (const partData of data.parts) {
+        const stock = await Stock.findById(partData.part);
+        if (!stock) {
+          return NextResponse.json(
+            { error: "Parça bulunamadı" },
+            { status: 404 }
+          );
+        }
+
+        // Stok miktarını kontrol et
+        if (stock.quantity < partData.quantity) {
+          return NextResponse.json(
+            { error: `${stock.name} için yeterli stok yok` },
+            { status: 400 }
+          );
+        }
+
+        // Stok miktarını güncelle
+        stock.quantity -= partData.quantity;
+        await stock.save();
+      }
+    }
+
+    // İşi güncelle
+    const updatedJob = await Job.findByIdAndUpdate(
+      id,
+      { $set: data },
+      { new: true }
+    );
+
+    console.log("İş başarıyla güncellendi:", updatedJob);
+    return NextResponse.json(updatedJob);
+  } catch (error) {
+    console.error("İş güncelleme hatası:", error);
+    return NextResponse.json(
+      { error: "İş güncellenirken bir hata oluştu" },
       { status: 500 }
     );
   }
