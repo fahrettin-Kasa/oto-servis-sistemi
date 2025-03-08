@@ -9,14 +9,18 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const router = useRouter();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (username === "fahrettin" && password === "fahrettin") {
       // Login başarılı - cookie ayarla
       Cookies.set("isLoggedIn", "true", { expires: 7 }); // 7 gün geçerli
       toast.success("Giriş başarılı!");
-      router.push("/"); // Ana sayfaya yönlendir
+
+      // Kısa bir gecikme ile sayfayı ana sayfaya yönlendir
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 1000);
     } else {
       // Login başarısız
       toast.error("Kullanıcı adı veya şifre hatalı!");
