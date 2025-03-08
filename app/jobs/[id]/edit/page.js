@@ -7,6 +7,9 @@ import toast from "react-hot-toast";
 
 export default function EditJobPage({ params }) {
   const [firms, setFirms] = useState([]);
+  const [stocks, setStocks] = useState([]);
+  const [selectedStock, setSelectedStock] = useState("");
+  const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [jobData, setJobData] = useState({
     name: "",
     phone: "",
@@ -23,6 +26,8 @@ export default function EditJobPage({ params }) {
     date: "",
     parts: [],
     partsTotal: 0,
+    jobPrice: "",
+    initialPartsTotal: 0,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -31,6 +36,7 @@ export default function EditJobPage({ params }) {
   useEffect(() => {
     fetchJobDetails();
     fetchFirms();
+    fetchStocks();
   }, []);
 
   const fetchJobDetails = async () => {
@@ -57,15 +63,32 @@ export default function EditJobPage({ params }) {
         model: job.model || "",
         plate: job.plate || "",
         job: job.job || "",
-        price: job.price ? job.price.toString() : "",
         status: job.status || "Beklemede",
         firm: job.firm || null,
         vehicle: job.vehicle || "sedan",
         type: job.firm ? "firm" : "customer",
         customer: job.customer || null,
         date: job.date || new Date().toISOString(),
-        parts: job.parts || [],
-        partsTotal: job.partsTotal || 0,
+        jobPrice: job.price || 0,
+        parts:
+          job.parts.map((part) => ({
+            part: part.part?._id || part.part,
+            quantity: part.quantity,
+            price: part.part?.salePrice || part.price,
+            _tempData: part.part,
+          })) || [],
+        partsTotal:
+          job.parts?.reduce(
+            (total, part) =>
+              total + (part.part?.salePrice || part.price) * part.quantity,
+            0
+          ) || 0,
+        initialPartsTotal:
+          job.parts?.reduce(
+            (total, part) =>
+              total + (part.part?.salePrice || part.price) * part.quantity,
+            0
+          ) || 0,
       };
 
       console.log("Setting job data:", updatedJobData);
@@ -84,6 +107,17 @@ export default function EditJobPage({ params }) {
       setError("Firma listesi alınırken bir hata oluştu.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchStocks = async () => {
+    try {
+      const response = await axios.get("/api/stock");
+      if (response.data.success) {
+        setStocks(response.data.stocks);
+      }
+    } catch (err) {
+      setError("Stok listesi alınırken bir hata oluştu.");
     }
   };
 
@@ -109,7 +143,6 @@ export default function EditJobPage({ params }) {
     // Her zaman zorunlu olan alanları kontrol et
     if (!jobData.name?.trim()) missingFields.push("Ad - Soyad");
     if (!jobData.phone?.trim()) missingFields.push("Telefon");
-    if (!jobData.price) missingFields.push("Tutar");
     if (!jobData.vehicle?.trim()) missingFields.push("Araç Tipi");
 
     // Sadece firma işi ise firma kontrolü yap
@@ -135,7 +168,9 @@ export default function EditJobPage({ params }) {
       model: (jobData.model || "").trim(),
       plate: (jobData.plate || "").trim(),
       job: (jobData.job || "").trim(),
-      price: Number(jobData.price),
+      price:
+        Number(jobData.jobPrice) +
+        (jobData.partsTotal - jobData.initialPartsTotal),
       status: jobData.status,
       firm: jobData.type === "firm" ? jobData.firm : null,
       customer: jobData.type === "customer" ? { _id: jobData.customer } : null,
@@ -196,6 +231,56 @@ export default function EditJobPage({ params }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddPart = () => {
+    if (!selectedStock) {
+      toast.error("Lütfen bir parça seçin");
+      return;
+    }
+
+    const stock = stocks.find((s) => s._id === selectedStock);
+    if (!stock) {
+      toast.error("Seçili parça bulunamadı");
+      return;
+    }
+
+    if (selectedQuantity < 1) {
+      toast.error("Miktar en az 1 olmalıdır");
+      return;
+    }
+
+    const partTotal = stock.salePrice * selectedQuantity;
+
+    const newPart = {
+      part: stock._id,
+      quantity: selectedQuantity,
+      price: stock.salePrice,
+      _tempData: stock,
+    };
+
+    setJobData((prev) => ({
+      ...prev,
+      parts: [...prev.parts, newPart],
+      partsTotal: prev.partsTotal + partTotal,
+    }));
+
+    setSelectedStock("");
+    setSelectedQuantity(1);
+    toast.success("Parça eklendi");
+  };
+
+  const handleRemovePart = (index) => {
+    const removedPart = jobData.parts[index];
+    const partTotal = removedPart.price * removedPart.quantity;
+
+    setJobData((prev) => ({
+      ...prev,
+      parts: prev.parts.filter((_, i) => i !== index),
+      partsTotal: prev.partsTotal - partTotal,
+    }));
+
+    toast.success("Parça kaldırıldı");
   };
 
   if (loading) {
@@ -341,18 +426,35 @@ export default function EditJobPage({ params }) {
 
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Tutar <span className="text-red-500">*</span>
+                  İş Ücreti
                 </label>
                 <input
                   type="number"
-                  name="price"
-                  value={jobData.price}
+                  name="jobPrice"
+                  value={jobData.jobPrice}
                   onChange={(e) =>
-                    setJobData({ ...jobData, price: e.target.value })
+                    setJobData({ ...jobData, jobPrice: Number(e.target.value) })
                   }
                   className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                  placeholder="Fiyat"
+                  placeholder="İş Ücreti"
                 />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Toplam Tutar
+                </label>
+                <div className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white">
+                  ₺
+                  {(
+                    Number(jobData.jobPrice) +
+                    (jobData.partsTotal - jobData.initialPartsTotal)
+                  )?.toLocaleString("tr-TR")}
+                </div>
+                <p className="mt-1 text-sm text-gray-400">
+                  Not: Toplam tutar, iş ücreti ve yeni eklenen parçaların
+                  tutarlarının toplamı olarak hesaplanır.
+                </p>
               </div>
 
               <div className="mb-4">
@@ -389,20 +491,159 @@ export default function EditJobPage({ params }) {
               ></textarea>
             </div>
 
-            <div className="flex justify-end space-x-4">
-              <Link
-                href={`/jobs/${params.id}`}
-                className="px-4 py-2 text-gray-300 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors duration-200"
-              >
-                İptal
-              </Link>
+            <div className="mt-8 border-t border-gray-700 pt-6">
+              <h3 className="text-lg font-medium text-white mb-4">
+                Parça Ekle
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Parça
+                  </label>
+                  <select
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    value={selectedStock}
+                    onChange={(e) => setSelectedStock(e.target.value)}
+                  >
+                    <option value="">Parça Seç</option>
+                    {stocks.map((stock) => (
+                      <option key={stock._id} value={stock._id}>
+                        {stock.name} - ₺
+                        {stock.salePrice?.toLocaleString("tr-TR")} (
+                        {stock.quantity} {stock.unit})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Miktar
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    value={selectedQuantity}
+                    onChange={(e) =>
+                      setSelectedQuantity(parseInt(e.target.value) || 1)
+                    }
+                  />
+                </div>
+                <div className="flex items-end">
+                  <button
+                    type="button"
+                    onClick={handleAddPart}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg transition-colors duration-200"
+                  >
+                    Ekle
+                  </button>
+                </div>
+              </div>
+
+              {jobData.parts.length > 0 && (
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium text-gray-300 mb-2">
+                    Eklenen Parçalar
+                  </h4>
+                  <div className="bg-gray-900/50 rounded-lg overflow-hidden">
+                    <table className="min-w-full divide-y divide-gray-800">
+                      <thead>
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">
+                            Parça
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">
+                            Miktar
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">
+                            Birim Fiyat
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">
+                            Toplam
+                          </th>
+                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">
+                            İşlem
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-800">
+                        {jobData.parts.map((part, index) => {
+                          const stockData =
+                            part._tempData ||
+                            stocks.find((s) => s._id === part.part);
+                          return (
+                            <tr key={index} className="hover:bg-gray-800/50">
+                              <td className="px-4 py-3 text-sm text-white">
+                                <div>
+                                  <div className="font-medium">
+                                    {stockData?.name || "Bilinmeyen Parça"}
+                                  </div>
+                                  <div className="text-gray-400 text-xs">
+                                    Kod: {stockData?.code}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-white">
+                                {part.quantity} {stockData?.unit || "Adet"}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-white">
+                                ₺{part.price?.toLocaleString("tr-TR")}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-white">
+                                ₺
+                                {(part.price * part.quantity)?.toLocaleString(
+                                  "tr-TR"
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-white text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemovePart(index)}
+                                  className="text-red-400 hover:text-red-300 transition-colors duration-200"
+                                >
+                                  Kaldır
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot className="bg-gray-800/50">
+                        <tr>
+                          <td
+                            colSpan="3"
+                            className="px-4 py-3 text-sm font-medium text-gray-400 text-right"
+                          >
+                            Parça Toplamı:
+                          </td>
+                          <td
+                            colSpan="2"
+                            className="px-4 py-3 text-sm font-medium text-white"
+                          >
+                            ₺{jobData.partsTotal?.toLocaleString("tr-TR")}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-8 flex gap-4">
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg transition-colors duration-200"
                 disabled={loading}
               >
                 {loading ? "Kaydediliyor..." : "Kaydet"}
               </button>
+              <Link
+                href="/jobs"
+                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-6 py-2.5 rounded-lg transition-colors duration-200 text-center"
+              >
+                İptal
+              </Link>
             </div>
           </form>
         </div>

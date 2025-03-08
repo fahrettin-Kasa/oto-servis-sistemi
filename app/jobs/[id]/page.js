@@ -152,6 +152,90 @@ export default function JobDetailPage({ params }) {
             </h3>
             <p className="text-white whitespace-pre-wrap">{job.job}</p>
           </div>
+
+          {job.parts && job.parts.length > 0 && (
+            <div className="mt-8 border-t border-gray-700 pt-6">
+              <h3 className="text-gray-400 text-sm font-medium mb-2">
+                Kullanılan Parçalar
+              </h3>
+              <div className="bg-gray-900/50 rounded-lg overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-800">
+                  <thead>
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">
+                        Parça
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">
+                        Miktar
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">
+                        Birim Fiyat
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">
+                        Toplam
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {job.parts.map((part, index) => (
+                      <tr key={index} className="hover:bg-gray-800/50">
+                        <td className="px-4 py-3 text-sm text-white">
+                          {part.part ? (
+                            <div>
+                              <div className="font-medium">
+                                {part.part.name}
+                              </div>
+                              <div className="text-gray-400 text-xs">
+                                Kod: {part.part.code}
+                              </div>
+                            </div>
+                          ) : (
+                            "Bilinmeyen Parça"
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-white">
+                          {part.quantity} {part.part?.unit || "Adet"}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-white">
+                          ₺
+                          {part.part?.salePrice?.toLocaleString("tr-TR") ||
+                            part.price?.toLocaleString("tr-TR")}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-white">
+                          ₺
+                          {(
+                            (part.part?.salePrice || part.price) * part.quantity
+                          )?.toLocaleString("tr-TR")}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="bg-gray-800/50">
+                    <tr>
+                      <td
+                        colSpan="3"
+                        className="px-4 py-3 text-sm font-medium text-gray-400 text-right"
+                      >
+                        Parça Toplamı:
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium text-white">
+                        ₺
+                        {job.parts
+                          .reduce(
+                            (total, part) =>
+                              total +
+                              (part.part?.salePrice || part.price) *
+                                part.quantity,
+                            0
+                          )
+                          .toLocaleString("tr-TR")}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="mt-6">

@@ -12,7 +12,12 @@ export async function GET(request, { params }) {
   try {
     let job = await Job.findById(id)
       .populate("firm", "name")
-      .populate("customer", "name");
+      .populate("customer", "name")
+      .populate({
+        path: "parts.part",
+        model: "Stock",
+        select: "name code category salePrice purchasePrice unit",
+      });
 
     if (!job) {
       console.log("Job not found:", id);
@@ -35,8 +40,15 @@ export async function GET(request, { params }) {
       job: jobData.job || "",
       vehicle:
         jobData.vehicle === "swdan" ? "sedan" : jobData.vehicle || "sedan",
-      price: jobData.price || 0,
       status: jobData.status || "Beklemede",
+      parts: jobData.parts || [],
+      partsTotal:
+        jobData.parts?.reduce(
+          (total, part) =>
+            total + (part.part?.salePrice || part.price) * part.quantity,
+          0
+        ) || 0,
+      price: jobData.price || 0,
     };
 
     // Veritabanını güncelle
@@ -46,7 +58,12 @@ export async function GET(request, { params }) {
       { new: true }
     )
       .populate("firm", "name")
-      .populate("customer", "name");
+      .populate("customer", "name")
+      .populate({
+        path: "parts.part",
+        model: "Stock",
+        select: "name code category salePrice purchasePrice unit",
+      });
 
     console.log("Database updated with fields:", updateFields);
     console.log("Updated job data:", updatedJob);
@@ -118,16 +135,23 @@ export async function PUT(req, { params }) {
         $set: {
           ...updateData,
           status: updateData.status || currentJob.status,
-          price:
-            updateData.price !== undefined
-              ? Number(updateData.price)
-              : currentJob.price,
+          partsTotal:
+            updateData.parts?.reduce(
+              (total, part) => total + part.price * part.quantity,
+              0
+            ) || 0,
+          price: updateData.price || currentJob.price || 0,
         },
       },
       { new: true, runValidators: true }
     )
       .populate("firm", "name")
-      .populate("customer", "name");
+      .populate("customer", "name")
+      .populate({
+        path: "parts.part",
+        model: "Stock",
+        select: "name code category salePrice purchasePrice unit",
+      });
 
     console.log("Database update result:", updatedJob);
 

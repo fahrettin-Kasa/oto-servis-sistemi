@@ -5,11 +5,11 @@ import Stock from "@/models/Stock";
 export async function GET() {
   try {
     await connectDB();
-    const stocks = await Stock.find().sort({ createdAt: -1 });
-    return NextResponse.json({ stocks });
+    const stocks = await Stock.find().sort({ name: 1 });
+    return NextResponse.json({ success: true, stocks });
   } catch (error) {
     return NextResponse.json(
-      { error: "Stok bilgileri alınırken bir hata oluştu" },
+      { error: "Stok listesi alınırken bir hata oluştu" },
       { status: 500 }
     );
   }
